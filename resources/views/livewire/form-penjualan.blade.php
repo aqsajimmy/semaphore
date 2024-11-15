@@ -4,11 +4,11 @@
             {{ session('message') }}
         </div>
     @endif
-
-    <div class="py-6">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 text-gray-900 dark:text-gray-100">
+    <div class="flex justify-between gap-6 mt-6 mx-6">
+        <div class="w-full">
+            <div class="max-w-auto sm:px-6 lg:px-8">
+                <div
+                    class="p-6 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                     <form onkeydown="return event.key !== 'Enter';">
                         <div class="flex justify-stretch gap-4 mb-4">
                             <div class="">
@@ -34,29 +34,20 @@
                             </div>
                             <div class="">
                                 <x-input-label>
-                                    Total Belanja
+                                    No. Whatsapp
                                 </x-input-label>
-                                <x-text-input type="text" class="w-auto block" wire:model="total_harga"
-                                    readonly></x-text-input>
+                                <x-text-input type="number" class="w-auto block" name="whatsapp" id="whatsapp"
+                                    wire:model="whatsapp"></x-text-input>
                             </div>
                             <div class="">
                                 <x-input-label>
-                                    Simpan Transaksi
+                                    Nama Kasir
                                 </x-input-label>
-                                <x-success-button wire:loading.attr="disabled"
-                                    wire:click.prevent="updatePenjualan({{ $no_transaksi }})">
-                                    Simpan
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                        stroke-width="1.5" stroke="currentColor" class="size-6">
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                            d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 0 0-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 0 1-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 0 0 3 15h-.75M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm3 0h.008v.008H18V10.5Zm-12 0h.008v.008H6V10.5Z" />
-                                    </svg>
-                                    <x-loading wire:target="updatePenjualan({{ $no_transaksi }})"> Proses...
-                                    </x-loading>
-                                </x-success-button>
+                                <x-text-input type="text" class="w-auto block" name="" id=""
+                                    value="Nama kasir" readonly></x-text-input>
                             </div>
                         </div>
-                        <hr class="mb-4">
+                        <hr class="mb-4 w-auto">
                         <div class="add-input flex justify-stretch gap-4 mt-4">
                             <div class="">
                                 <x-input-label>
@@ -113,7 +104,7 @@
                                     Tambah
                                 </x-input-label>
                                 <x-primary-button wire:click.prevent="add();">
-                                    Input
+                                    Add
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                         stroke-width="1.5" stroke="currentColor" class="size-6">
                                         <path stroke-linecap="round" stroke-linejoin="round"
@@ -124,13 +115,8 @@
                         </div>
                     </form>
                 </div>
-            </div>
-        </div>
-    </div>
-    <div class="py-0">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg">
-                <div class="p-6 text-gray-900 dark:text-gray-100 overflow-auto">
+                <div
+                    class="p-6 text-gray-900 dark:text-gray-100 overflow-auto bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg mt-6">
                     <table class="table table-auto min-w-full">
                         <thead class="font-medium text-lg text-gray-700 dark:text-gray-300">
                             <tr>
@@ -172,6 +158,82 @@
                     </table>
                     <div class="mt-4">
                         {{ $items_details->links() }}
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        <div class="w-1/4">
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg max-w-auto sm:px-6 lg:p-6">
+                <div class="">
+                    <x-input-label>
+                        Total Belanja
+                    </x-input-label>
+                    <x-text-input type="text" class="w-full block text-right" wire:model="total_harga"
+                        readonly></x-text-input>
+                </div>
+                <div class="mt-3">
+                    <x-input-label>
+                        Tunai / DP
+                    </x-input-label>
+                    <x-text-input type="number" class="w-full block" name="tunai" id="tunai"
+                        wire:model="tunai" wire:keyup="calculateSubtotals"></x-text-input>
+                    @error('tunai')
+                        <span class="text-red-800 error">{{ $message }}</span>
+                    @enderror
+                </div>
+                <div class="mt-3">
+                    <x-input-label>
+                        Sisa Pembayaran (Kredit)
+                    </x-input-label>
+                    <x-text-input type="number" class="w-full block" name="kredit" id="kredit"
+                        wire:model="kredit" wire:keyup="calculateSubtotals"></x-text-input>
+                    @error('kredit')
+                        <span class="text-red-800 error">{{ $message }}</span>
+                    @enderror
+                </div>
+                <div class="mt-3">
+                    <x-input-label>
+                        Kembalian
+                    </x-input-label>
+                    <x-text-input type="number" class="w-full block" name="kembalian" id="kembalian"
+                        wire:model="kembalian" wire:keyup="calculateSubtotals"></x-text-input>
+                    @error('kembalian')
+                        <span class="text-red-800 error">{{ $message }}</span>
+                    @enderror
+                </div>
+                <div class="mt-3 flex justify-between gap-4">
+                    <div>
+                        <x-input-label>
+                            Hanya Simpan
+                        </x-input-label>
+                        <x-success-button wire:loading.attr="disabled"
+                            wire:click.prevent="updatePenjualan({{ $no_transaksi }})">
+                            Simpan
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                stroke-width="1.5" stroke="currentColor" class="size-6">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 0 0-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 0 1-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 0 0 3 15h-.75M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm3 0h.008v.008H18V10.5Zm-12 0h.008v.008H6V10.5Z" />
+                            </svg>
+                            <x-loading wire:target="updatePenjualan({{ $no_transaksi }})"> Proses...
+                            </x-loading>
+                        </x-success-button>
+                    </div>
+                    <div>
+                        <x-input-label>
+                            Batal
+                        </x-input-label>
+                        <x-danger-button wire:loading.attr="disabled"
+                            wire:click.prevent="updatePenjualan({{ $no_transaksi }})">
+                            Batal
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                stroke-width="1.5" stroke="currentColor" class="size-6">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="m20.25 7.5-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5m6 4.125 2.25 2.25m0 0 2.25 2.25M12 13.875l2.25-2.25M12 13.875l-2.25 2.25M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z" />
+                            </svg>
+                            <x-loading wire:target="updatePenjualan({{ $no_transaksi }})"> Proses...
+                            </x-loading>
+                        </x-danger-button>
                     </div>
                 </div>
             </div>
