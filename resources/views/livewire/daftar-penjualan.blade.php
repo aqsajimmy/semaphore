@@ -8,26 +8,32 @@
                         <div><x-text-input type="text" placeholder="Cari Transaksi..."
                                 wire:model.live="search"></x-text-input></div>
                     </div>
-                    <table class="table table-auto min-w-full">
+                    <table class="table table-auto min-w-full w-full">
                         <thead class="font-medium text-lg text-gray-700 dark:text-gray-300">
                             <tr>
                                 <th>#</th>
                                 <th>Tanggal</th>
-                                <th>No. Transaksi</th>
-                                <th>Nama Pelanggan</th>
+                                <th>No. Trx</th>
+                                <th>Pelanggan</th>
                                 <th>Total Harga</th>
+                                <th>Tunai</th>
+                                <th>Debit</th>
+                                <th>Kredit</th>
+                                <th>Sisa</th>
                                 <th>Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
-
                             @forelse ($penjualan as $item)
                                 <tr class="hover:bg-gray-700 rounded" wire:key="{{ $item->id }}">
                                     <td>{{ $loop->iteration }}</td>
-                                    <td>{{ \Carbon\Carbon::parse($item->tanggal)->translatedFormat('D, d F Y') }}</td>
+                                    <td>{{ \Carbon\Carbon::parse($item->tanggal)->translatedFormat('D, d-m-y') }}</td>
                                     <td>{{ $item->id }}</td>
                                     <td>{{ $item->nama_pelanggan }}</td>
-                                    <td>Rp. {{ number_format($item->total_harga, 0) }}</td>
+                                    <td>Rp. {{ number_format($item->total_harga, 0, '', ',') }}</td>
+                                    <td>Rp. {{ number_format($item->tunai, 0, '', ',') }}</td>
+                                    <td>Rp. {{ number_format($item->debit, 0, '', ',') }}</td>
+                                    <td>Rp. {{ number_format($item->kredit, 0, '', ',') }}</td>
                                     <td>
                                         <div class="flex gap-2">
                                             <form action="{{ route('download_invoice', $item->id) }}">
@@ -40,8 +46,8 @@
                                                             d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
                                                     </svg>
 
-                                                <x-loading wire:target="download('{{ $item->id }}')"> Proses...
-                                                </x-loading>
+                                                    <x-loading wire:target="download('{{ $item->id }}')"> Proses...
+                                                    </x-loading>
                                                 </x-primary-button>
                                             </form>
                                             <x-success-button wire:loading.attr="disabled"

@@ -2,17 +2,21 @@
 
 namespace App\Livewire;
 
+use App\Http\Controllers\WhatsappSender;
 use Livewire\Component;
 use App\Models\Penjualan;
 use Livewire\WithPagination;
 use App\Models\PenjualanDetail;
 use Illuminate\Support\Facades\Auth;
 use Spatie\LaravelPdf\Facades\Pdf;
+use App\Jobs\SendWaJob;
 
 class FormPenjualan extends Component
 {
     use WithPagination;
-    public $no_transaksi, $nama_pelanggan, $total_harga, $tanggal, $nama_barang, $kuantitas, $harga_satuan, $satuan, $subtotal;
+    public $no_transaksi, $tunai, $debit, $kredit, $kembalian,
+        $total_harga, $nama_pelanggan, $kasir_nama, $tanggal,
+        $nama_barang, $kuantitas, $harga_satuan, $satuan, $subtotal, $whatsapp;
     public function mount()
     {
 
@@ -23,10 +27,11 @@ class FormPenjualan extends Component
             'tanggal' => now(),
             'total_harga' => 0,
             'nama_pelanggan' => '',
-            'kasir_id' => $kasir->id
+            'kasir_id' => $kasir->id,
         ];
 
         $kasir_id = $kasir->id;
+        $this->kasir_nama = ucwords($kasir->name);
         $last_transaksi = Penjualan::where('kasir_id', $kasir_id)->latest()->first();
         $last_total_harga = $last_transaksi->total_harga ?? 0;
 
@@ -44,7 +49,6 @@ class FormPenjualan extends Component
 
     public function updatedKuantitas()
     {
-        // Ensure kuantitas is a valid number before calculating subtotal
         if (is_numeric($this->kuantitas) && $this->kuantitas >= 0) {
             $this->calculateSubtotals(); // Call the method to update subtotal
         } else {
@@ -54,7 +58,6 @@ class FormPenjualan extends Component
 
     public function updatedHargaSatuan()
     {
-        // Ensure harga_satuan is a valid number before calculating subtotal
         if (is_numeric($this->harga_satuan) && $this->harga_satuan >= 0) {
             $this->calculateSubtotals(); // Call the method to update subtotal
         } else {
@@ -64,17 +67,20 @@ class FormPenjualan extends Component
 
     public function calculateSubtotals()
     {
-        // Ensure both kuantitas and harga_satuan are valid numbers
         if (is_numeric($this->kuantitas) && is_numeric($this->harga_satuan)) {
-            $this->subtotal = $this->kuantitas * $this->harga_satuan;
+            $subtot = number_format($this->kuantitas * $this->harga_satuan, 0, '', ',');
+            $this->subtotal = $subtot;
         } else {
             $this->subtotal = 0; // Reset subtotal if either value is invalid
         }
+        $this->calculateKembaliannKredit();
     }
 
     public function calculateTotalHarga()
     {
-        $this->total_harga = number_format(PenjualanDetail::where('id_penjualan', $this->no_transaksi)->sum('subtotal'), 0, '.', '.');
+        $totalh = number_format(PenjualanDetail::where('id_penjualan', $this->no_transaksi)->sum('subtotal'), 0, '', ',');
+        $this->total_harga = $totalh;
+        $this->calculateKembaliannKredit();
     }
 
     public function add()
@@ -96,14 +102,13 @@ class FormPenjualan extends Component
                 'harga_satuan.required' => 'harga satuan field is required',
                 'subtotal.required' => 'subtotal field is required'
             ]
-
         );
 
         $ntr = $this->no_transaksi;
-        $nb = $this->nama_barang = $this->nama_barang ?? ''; // Default to empty string if not set
-        $qty = $this->kuantitas = $this->kuantitas ?? 0; // Default to 0 if not set
-        $stn = $this->satuan = $this->satuan ?? ''; // Default to empty string if not set
-        $hrgstn = $this->harga_satuan = $this->harga_satuan ?? 0; // Default to 0 if not set
+        $nb = $this->nama_barang ?? ''; // Default to empty string if not set
+        $qty = $this->kuantitas ?? 0; // Default to 0 if not set
+        $stn = $this->satuan ?? ''; // Default to empty string if not set
+        $hrgstn = (int) str_replace(',', '', $this->harga_satuan) ?? 0; // Default to 0 if not set
 
         $items = [
             'id_penjualan' => $ntr,
@@ -139,13 +144,23 @@ class FormPenjualan extends Component
             ]
 
         );
-
         $this->calculateTotalHarga();
         $penjualan = Penjualan::findOrFail($no_transaksi);
+        $whatsapp = $this->whatsapp;
+        if (preg_match('/^08/', $whatsapp)) {
+            $whatsapp = preg_replace('/^08/', '628', $whatsapp);
+        } elseif (preg_match('/^62/', $whatsapp)) {
+            $whatsapp;
+        }
+
         $penjualan->update([
             'tanggal' => $this->tanggal,
-            'total_harga' => (int) str_replace('.', '', $this->total_harga),
+            'total_harga' => (int) str_replace(',', '', $this->total_harga),
+            'tunai' => (int) str_replace(',', '', $this->tunai),
+            'debit' => (int) str_replace(',', '', $this->debit),
+            'kredit' => (int) str_replace(',', '', $this->kredit),
             'nama_pelanggan' => $this->nama_pelanggan,
+            'whatsapp' => $whatsapp,
             'kasir_id' => Auth::user()->id
         ]);
 
@@ -154,17 +169,49 @@ class FormPenjualan extends Component
         } else {
             toastr()->error('Transaksi Gagal Tersimpan');
         }
+        try {
+            SendWaJob::dispatch($penjualan->id); // Dispatch the job asynchronously
+        } catch (\Exception $e) {
+            toastr()->error('Failed to queue WhatsApp message: ' . $e->getMessage());
+        }
         return redirect(route('penjualan'));
+    }
+
+    public function calculateKembaliannKredit()
+    {
+        $this->kredit = null;
+        $this->kembalian = null;
+
+        $tunai = (int) ($this->tunai ?? 0);
+        $debit = (int) ($this->debit ?? 0);
+        $total_bayar = $tunai + $debit;
+        $total = (int) str_replace(',', '', $this->total_harga ?? '0');
+        $kembalian = $total_bayar - $total;
+        $kredit = $total - $total_bayar;
+
+        if ($total_bayar > $total) {
+            $this->kembalian = number_format($kembalian, 0, '', ',');
+        } elseif ($total_bayar < $total) {
+            $this->kredit = number_format($kredit, 0, '', ',');
+        } else {
+            $this->kredit = null;
+            $this->kembalian = null;
+        }
     }
 
     public function resetFields()
     {
-        $this->nama_barang = '';
+        $this->nama_barang = null;
         $this->nama_pelanggan = 'umum';
-        $this->kuantitas = '';
+        $this->kuantitas = null;
         $this->satuan = 'pcs';
-        $this->harga_satuan = '';
+        $this->harga_satuan = null;
+        $this->total_harga = 0;
         $this->subtotal = 0;
+        $this->tunai = null;
+        $this->debit = null;
+        $this->kredit = null;
+        $this->kembalian = null;
     }
 
     public function destroy($id)
@@ -188,35 +235,25 @@ class FormPenjualan extends Component
             'items_details' => $items_details,
         ]);
     }
-    public function sendWa()
+
+    public function sendWa($id)
     {
         try {
+            // Instantiate the DaftarPenjualan class
+            $daftarPenjualan = new DaftarPenjualan();
 
-            $send = $this->sendInvoice(); // Call the sendInvoice method
+            // Call the sendInvoice method on the instance
+            $send = $daftarPenjualan->sendInvoice($id);
+
+            // Check if the invoice was sent successfully
             if ($send) {
-                toastr()->success('Invoice Terkirim ! ');
+                toastr()->success('Invoice Terkirim!');
             } else {
-                toastr()->error('Invoice Gagal Terkirim !');
+                toastr()->error('Invoice Gagal Terkirim!');
             }
         } catch (\Exception $e) {
-            toastr()->error('Invoice Gagal Terkirim !: <br>' . $e->getMessage());
+            // Handle exceptions and display error message
+            toastr()->error('Invoice Gagal Terkirim!<br>' . $e->getMessage());
         }
-    }
-
-    public function sendInvoice()
-    {
-
-        $number = '6282287564411';
-        $text = 'Hello, this is a test message ' . time();
-        $file = 'https://placehold.co/600x400'; // Optional if sending image, video, or document
-        $apiKey = '0x';
-        $type = 'document'; // Can be 'text', 'image', 'video', or 'document'
-        $filename = 'example.jpg'; // Optional custom filename
-
-        // Call the sendMessage function
-        $result = sendMessage($number, $text, $apiKey, $file, $type, $filename);
-
-        // Check the result
-        return $result['status'] === 'true';
     }
 }
