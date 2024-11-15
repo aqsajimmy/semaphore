@@ -15,7 +15,7 @@ return new class extends Migration
         Schema::create('penjualan', function (Blueprint $table) {
             $table->id();
             $table->dateTime('tanggal')->default(DB::raw('CURRENT_TIMESTAMP'));
-            $table->decimal('total_harga', 10, 2);
+            $table->decimal('total_harga', 10, 0)->default('0');
             $table->string('nama_pelanggan', 100)->default('umum')->nullable();
             $table->timestamps();
         });

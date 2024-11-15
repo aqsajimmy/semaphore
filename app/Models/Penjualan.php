@@ -5,14 +5,16 @@ namespace App\Models;
 use App\Models\User;
 use App\Models\PenjualanDetail;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Penjualan extends Model
 {
+    use HasFactory, Notifiable;
     protected $table = 'penjualan';
     protected $guarded = [];
-
     public function scopeSearch($query, $search)
     {
         if (!empty($search)) {

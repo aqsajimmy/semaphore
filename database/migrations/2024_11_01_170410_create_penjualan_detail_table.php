@@ -16,8 +16,8 @@ return new class extends Migration
             $table->unsignedBigInteger('id_penjualan');
             $table->string('nama_barang', 100);
             $table->integer('kuantitas');
-            $table->decimal('harga_satuan', 10, 2);
-            $table->decimal('subtotal', 10, 2);
+            $table->decimal('harga_satuan', 10, 0);
+            $table->decimal('subtotal', 10, 0);
             $table->timestamps();
 
             $table->foreign('id_penjualan')->references('id')->on('penjualan')->onDelete('cascade');
