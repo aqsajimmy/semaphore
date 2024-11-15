@@ -1,3 +1,32 @@
+## Supervisor Configuration for Laravel Queue Whatsapp Workers
+### Install & init
+- ```sudo apt update```
+- ```sudo apt install supervisor```
+- ```sudo nano /etc/supervisor/conf.d/laravel-worker.conf```
+### configuration worker:
+```
+process_name=%(program_name)s_%(process_num)02d
+command=php /path/to/your/laravel/project/artisan queue:work --sleep=3 --tries=3 --timeout=90
+autostart=true
+autorestart=true
+user=your_username
+numprocs=1
+redirect_stderr=true
+stdout_logfile=/path/to/your/laravel/project/storage/logs/worker.log
+```
+### Update Supervisor:
+- ```sudo supervisorctl reread```
+- ```sudo supervisorctl update```
+- ```sudo supervisorctl start laravel-worker:*```
+- ```php artisan queue:restart```
+### monitoring:
+```
+sudo supervisorctl status
+tail -f /path/to/your/laravel/project/storage/logs/worker.log
+```
+
+
+
 <p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
 <p align="center">
