@@ -157,7 +157,7 @@ class FormPenjualan extends Component
         $kembalian_i = (int) str_replace(',', '', $this->kembalian);
         $debit_i = (int) str_replace(',', '', $this->debit);
         $tunai_b = $debit_i;
-        if ($debit_i < $total_i) {
+        if ($debit_i <= $total_i) {
             $tunai_b = ($tunai_i - $kembalian_i);
         }
         $penjualan->update([
