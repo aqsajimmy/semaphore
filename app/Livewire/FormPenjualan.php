@@ -152,12 +152,19 @@ class FormPenjualan extends Component
         } elseif (preg_match('/^62/', $whatsapp)) {
             $whatsapp;
         }
-
+        $total_i = (int) str_replace(',', '', $this->total_harga);
+        $tunai_i = (int) str_replace(',', '', $this->tunai);
+        $kembalian_i = (int) str_replace(',', '', $this->kembalian);
+        $debit_i = (int) str_replace(',', '', $this->debit);
+        $tunai_b = $debit_i;
+        if ($debit_i < $total_i) {
+            $tunai_b = ($tunai_i - $kembalian_i);
+        }
         $penjualan->update([
             'tanggal' => $this->tanggal,
-            'total_harga' => (int) str_replace(',', '', $this->total_harga),
-            'tunai' => (int) str_replace(',', '', $this->tunai),
-            'debit' => (int) str_replace(',', '', $this->debit),
+            'total_harga' => $total_i,
+            'tunai' => $tunai_b,
+            'debit' => $debit_i,
             'kredit' => (int) str_replace(',', '', $this->kredit),
             'nama_pelanggan' => $this->nama_pelanggan,
             'whatsapp' => $whatsapp,
@@ -181,11 +188,17 @@ class FormPenjualan extends Component
     {
         $this->kredit = null;
         $this->kembalian = null;
-
         $tunai = (int) ($this->tunai ?? 0);
         $debit = (int) ($this->debit ?? 0);
-        $total_bayar = $tunai + $debit;
         $total = (int) str_replace(',', '', $this->total_harga ?? '0');
+
+        if ($debit > $total) {
+            toastr()->error('Nilai Debit Tidak Boleh Lebih dari Total Belanja: Rp.' . number_format($total, 0, '', ','));
+            return redirect(route('penjualan'));
+        }
+
+        $total_bayar = $tunai + $debit;
+
         $kembalian = $total_bayar - $total;
         $kredit = $total - $total_bayar;
 

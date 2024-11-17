@@ -84,6 +84,7 @@ class DaftarPenjualan extends Component
         $debit = number_format($data->debit, 0, '', ',');
         $kredit = number_format($data->kredit, 0, '', ',');
         $status = (($data->tunai + $data->debit) == $data->total_harga) ? "Lunas" : "Belum Lunas";
+        dd($data->tunai + $data->debit);
         $text = "*No. Transaksi\t: invoice-{$data->id}* \n";
         $text .= "=======================\n";
         $text .= "Pelanggan\t: {$data->nama_pelanggan} \n";
