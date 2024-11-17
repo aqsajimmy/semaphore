@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Http\Controllers\InvoiceController;
 use Livewire\Component;
 use App\Models\Penjualan;
 use Livewire\WithPagination;
@@ -46,7 +47,7 @@ class DaftarPenjualan extends Component
     public function sendWa($id)
     {
         try {
-            $send = $this->sendInvoice($id); // Call the sendInvoice method
+            $send = $this->sendInvoicePdf($id); // Call the sendInvoice method
 
             if ($send) {
                 toastr()->success('Invoice Terkirim ! ');
@@ -82,7 +83,7 @@ class DaftarPenjualan extends Component
         $tunai = number_format($data->tunai, 0, '', ',');
         $debit = number_format($data->debit, 0, '', ',');
         $kredit = number_format($data->kredit, 0, '', ',');
-
+        $status = (($data->tunai + $data->debit) == $data->total_harga) ? "Lunas" : "Belum Lunas";
         $text = "*No. Transaksi\t: invoice-{$data->id}* \n";
         $text .= "=======================\n";
         $text .= "Pelanggan\t: {$data->nama_pelanggan} \n";
@@ -91,10 +92,11 @@ class DaftarPenjualan extends Component
             $text .= "- {$detail->nama_barang}\t\t(Qty: {$detail->kuantitas} {$detail->satuan},\t\tHarga: Rp. " . number_format($detail->subtotal, 0, '', ',') . ")\n";
         }
         $text .= "=======================\n";
-        $text .= "\nTotal Pembelian\t\t: Rp. {$gtotal}";
+        $text .= "\n*Total Pembelian\t\t: Rp. {$gtotal}*";
         $text .= "\nBayar Tunai\t\t\t: Rp. {$tunai}";
         $text .= "\nBayar Debit\t\t\t: Rp. {$debit}";
-        $text .= "\nTotal Kredit\t\t\t: Rp. {$kredit}\n";
+        $text .= "\nTotal Kredit\t\t\t: Rp. {$kredit}";
+        $text .= "\nStatus Pembayaran\t\t: *{$status}*\n";
         $text .= "\nTerimakasih Telah Berbelanja di *Semaphore Bordir & Konveksi*.\n";
         $text .= "\n`layanan jimx.dev`";
         $file = "";
@@ -104,21 +106,42 @@ class DaftarPenjualan extends Component
 
         return $result['status'] === 'true';
     }
-    public function downloadInvoice($id)
+    public function sendInvoicePdf($id)
     {
-        // $data = Penjualan::with('penjualan_detail')->findOrFail($id);
-        // try {
-        //     return Invoice::make('invoice', ['data' => $data])
-        //         ->format('a4')
-        //         ->save("invoice-{$id}.pdf");
+        $data = Penjualan::with('penjualan_detail')->findOrFail($id);
+        $pdf = (new InvoiceController)->invoicePdf($id);
 
-        //     // toastr()->success("Invoice-{$data->id} Generated");
+        $apiKey = "jimx";
+        $type = "document";
+        $number = $data->whatsapp ?? '6282287564411';
 
-        //     // return $pdf;
-        // } catch (\Exception $e) {
-        //     Log::error("Failed to generate invoice PDF: " . $e->getMessage());
-        //     return toastr()->error('Failed to generate invoice :' . $e->getMessage());
-        // }
+        $gtotal = number_format($data->total_harga, 0, '', ',');
+        $tunai = number_format($data->tunai, 0, '', ',');
+        $debit = number_format($data->debit, 0, '', ',');
+        $kredit = number_format($data->kredit, 0, '', ',');
+        $status = (($data->tunai + $data->debit) == $data->total_harga) ? "Lunas" : "Belum Lunas";
+        $file = $pdf;
+        $filename = "invoice_semaphore_{$id}_{$status}.pdf";
+        $text = "*No. Transaksi\t: invoice-{$data->id}* \n";
+        $text .= "=======================\n";
+        $text .= "Pelanggan\t: {$data->nama_pelanggan} \n";
+        $text .= "Detail\t\t:\n";
+        foreach ($data->penjualan_detail as $detail) {
+            $text .= "- {$detail->nama_barang}\t\t(Qty: {$detail->kuantitas} {$detail->satuan},\t\tHarga: Rp. " . number_format($detail->subtotal, 0, '', ',') . ")\n";
+        }
+        $text .= "=======================\n";
+        $text .= "\n*Total Pembelian\t\t: Rp. {$gtotal}*";
+        $text .= "\nBayar Tunai\t\t\t: Rp. {$tunai}";
+        $text .= "\nBayar Debit\t\t\t: Rp. {$debit}";
+        $text .= "\nTotal Kredit\t\t\t: Rp. {$kredit}";
+        $text .= "\nStatus Pembayaran\t\t: *{$status}*\n";
+        $text .= "\nTerimakasih Telah Berbelanja di *Semaphore Bordir & Konveksi*.\n";
+        $text .= "\n`layanan jimx.dev`";
+
+
+        $result = sendMessage($apiKey, $type, $number, $text, $file, $filename);
+        // dd($file);
+        return $result['status'] === 'true';
     }
 
     public function download($id)

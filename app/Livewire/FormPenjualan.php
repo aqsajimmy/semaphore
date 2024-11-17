@@ -161,7 +161,7 @@ class FormPenjualan extends Component
             'kredit' => (int) str_replace(',', '', $this->kredit),
             'nama_pelanggan' => $this->nama_pelanggan,
             'whatsapp' => $whatsapp,
-            'kasir_id' => Auth::user()->id
+            'kasir_id' => $penjualan->kasir_id
         ]);
 
         if ($penjualan) {
