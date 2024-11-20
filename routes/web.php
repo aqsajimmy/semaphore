@@ -19,8 +19,9 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     Route::get('/penjualan', [PenjualanController::class, 'index'])->name('penjualan');
-    Route::get('/daftar-penjualan', [PenjualanController::class, 'daftar_penjualan'])->name('daftar_penjualan');
     Route::get('/daftar-penjualan/download/{id}', [InvoiceController::class, 'downloadInvoice'])->name('download_invoice');
+    Route::get('/daftar-penjualan', [PenjualanController::class, 'daftar_penjualan'])->name('daftar_penjualan');
+    Route::get('/daftar-penjualan/detail/{id}', [PenjualanController::class, 'detail_penjualan'])->name('detail_penjualan');
 
 
 });
