@@ -15,6 +15,9 @@ class Penjualan extends Model
     use HasFactory, Notifiable;
     protected $table = 'penjualan';
     protected $guarded = [];
+    protected $casts = [
+        'tanggal' => 'datetime',
+    ];
     public function scopeSearch($query, $search)
     {
         if (!empty($search)) {

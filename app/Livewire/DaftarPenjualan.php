@@ -6,7 +6,6 @@ use App\Http\Controllers\InvoiceController;
 use Livewire\Component;
 use App\Models\Penjualan;
 use Livewire\WithPagination;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use LaravelDaily\Invoices\Invoice;
 
@@ -148,5 +147,9 @@ class DaftarPenjualan extends Component
     public function download($id)
     {
         toastr()->success("Invoice-#{$id} Downloaded !");
+    }
+
+    public function detail_penjualan($id) {
+        dd($id);
     }
 }

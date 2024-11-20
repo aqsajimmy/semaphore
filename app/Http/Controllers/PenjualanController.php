@@ -23,4 +23,13 @@ class PenjualanController extends Controller
             'data' => $data,
         ]);
     }
+    public function detail_penjualan($id): View
+    {
+
+        $data = [];
+        return view('penjualan.detail-penjualan', [
+            'data' => $data,
+            'id' => $id,
+        ]);
+    }
 }
